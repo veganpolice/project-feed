@@ -1,0 +1,1122 @@
+<title>Inbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single feed column. Hero sentence summarises the day; sticky segmented tabs; cards carry a lead column
+   (channel for Triage, a date block for Due) so each section reads differently at a glance. */
+:root{
+  --bg:#EEF1EC; --surface:#FFFFFF; --sunk:#F5F7F3; --ink:#18211D; --muted:#5A6761; --faint:#8A958F; --line:#DCE2DC;
+  --accent:#1E6A55; --accent-ink:#FFFFFF; --accent-soft:#E0EFE8; --step:#F1F6F2;
+  --triage:#8A5A00; --triage-soft:#F7ECD3;
+  --late:#B23A2E; --late-soft:#F8E3DF;
+  --info:#3D5A99; --info-soft:#E3E9F6;
+  --wa:#1F8F5F; --gm:#C2412D; --nt:#B07A12; --im:#2F6FD6; --mt:#7A4FBF;
+  --c-tri:#9A6200; --c-tri-s:#FBF1DC; --c-due:#C0392B; --c-due-s:#FBE7E4; --c-open:#2F5BB7; --c-open-s:#E6EDFB; --c-idea:#B0377A; --c-idea-s:#FAE6F1; --c-agent:#6A44B8; --c-agent-s:#EFE8FB;
+  --shadow:0 1px 0 rgba(24,33,29,.04), 0 1px 2px rgba(24,33,29,.06);
+  --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body:"Instrument Sans", system-ui, -apple-system, sans-serif;
+  --mono:"DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1512; --surface:#171F1B; --sunk:#131A17; --ink:#E5ECE8; --muted:#9AA6A0; --faint:#6E7A74; --line:#26302B;
+  --accent:#6FC7A8; --accent-ink:#0C1310; --accent-soft:#1B3A30; --step:#1A2621;
+  --triage:#E9BE6B; --triage-soft:#372C17;
+  --late:#F28C80; --late-soft:#3A201D;
+  --info:#97ADE3; --info-soft:#212B42;
+  --wa:#4CC38A; --gm:#EE7A66; --nt:#E0B04E; --im:#6EA2F5; --mt:#B394EE;
+  --c-tri:#F0C46E; --c-tri-s:#33291A; --c-due:#F58C80; --c-due-s:#3A1F1C; --c-open:#8FB0F2; --c-open-s:#1E2840; --c-idea:#F08CC4; --c-idea-s:#3A1C2E; --c-agent:#B79AF2; --c-agent-s:#2A2140;
+  --shadow:0 1px 0 rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1512; --surface:#171F1B; --sunk:#131A17; --ink:#E5ECE8; --muted:#9AA6A0; --faint:#6E7A74; --line:#26302B;
+  --accent:#6FC7A8; --accent-ink:#0C1310; --accent-soft:#1B3A30; --step:#1A2621;
+  --triage:#E9BE6B; --triage-soft:#372C17;
+  --late:#F28C80; --late-soft:#3A201D;
+  --info:#97ADE3; --info-soft:#212B42;
+  --wa:#4CC38A; --gm:#EE7A66; --nt:#E0B04E; --im:#6EA2F5; --mt:#B394EE;
+  --c-tri:#F0C46E; --c-tri-s:#33291A; --c-due:#F58C80; --c-due-s:#3A1F1C; --c-open:#8FB0F2; --c-open-s:#1E2840; --c-idea:#F08CC4; --c-idea-s:#3A1C2E; --c-agent:#B79AF2; --c-agent-s:#2A2140;
+  --shadow:0 1px 0 rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:36px 96px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+a{color:inherit}
+button{font:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* hero */
+header{display:grid;gap:10px;margin-bottom:22px}
+.eyebrow{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font:500 12px/1.4 var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.livewrap{display:inline-flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0}
+.refresh{font:500 12px var(--mono);color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+.refresh:hover{color:var(--ink);border-color:var(--faint)}
+.live.stale{color:var(--late)} .live.stale i{background:var(--late)}
+.live{display:inline-flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--faint);display:inline-block}
+.live.on i{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.live.err i{background:var(--late)}
+h1{font-size:clamp(34px,7vw,48px);font-weight:700;line-height:1;letter-spacing:-.02em}
+.summary{font:500 clamp(18px,3.4vw,22px)/1.35 var(--display);color:var(--muted);max-width:30ch;letter-spacing:-.005em}
+.summary b{color:var(--ink);font-weight:600}
+.summary b.t{color:var(--triage)} .summary b.l{color:var(--late)}
+
+.notice{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:18px;box-shadow:var(--shadow)}
+.notice b{font-weight:600}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:3;background:var(--bg);padding-block:10px;margin-bottom:6px}
+.seg{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto;scrollbar-width:none;box-shadow:var(--shadow)}
+.seg::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;font:500 13px var(--body);border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:7px;cursor:pointer;display:flex;gap:7px;align-items:center;justify-content:center;white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab .n{font:500 11px var(--mono);font-variant-numeric:tabular-nums;color:var(--faint)}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.tab[aria-pressed="true"] .n{color:var(--bg);opacity:.7}
+/* project filter: one chip per project group, under the tabs; chips wrap onto more rows instead of scrolling */
+.projbar{display:flex;flex-wrap:wrap;gap:6px;padding-top:8px}
+.pchip{flex:none;display:inline-flex;gap:6px;align-items:center;font:500 12px var(--body);color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 8px;cursor:pointer;white-space:nowrap}
+.pchip i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--faint))}
+.pchip .n{font:500 11px var(--mono);font-variant-numeric:tabular-nums;color:var(--faint)}
+.pchip:hover{color:var(--ink)}
+.pchip[aria-pressed="true"]{background:var(--cs,var(--ink));color:var(--c,var(--bg));border-color:var(--c,var(--ink))}
+.pchip[aria-pressed="true"] .n{color:inherit;opacity:.7}
+.empty .btn{margin-left:8px}
+
+/* sections */
+section{margin-block:26px 34px}
+.sec-head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+.sec-head h2{font-size:21px;font-weight:600;letter-spacing:-.01em}
+.sec-head .count{font:500 12px var(--mono);color:var(--faint);font-variant-numeric:tabular-nums}
+.sec-desc{color:var(--muted);font-size:14px;margin:0 0 14px;max-width:60ch}
+.group-label{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:16px 0 8px}
+.group-label:first-child{margin-top:0}
+.list{display:grid;gap:10px}
+.empty{color:var(--muted);font-size:14px;padding:18px;border:1px dashed var(--line);border-radius:12px;text-align:center}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px 12px;display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;box-shadow:var(--shadow);position:relative}
+.card.nolead{grid-template-columns:minmax(0,1fr)}
+.card.busy{opacity:.5;pointer-events:none}
+.card.urgent::before,.card.high::before,.card.late::before{content:"";position:absolute;left:-1px;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0}
+.card.urgent::before,.card.late::before{background:var(--late)} .card.high::before{background:var(--triage)}
+.lead{grid-row:1 / span 2}
+.body{min-width:0;display:grid;gap:8px}
+.card h3{font-size:16px;font-weight:600;line-height:1.3;letter-spacing:-.005em;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:var(--muted)}
+.meta .proj{display:inline-flex;align-items:center;gap:6px}
+.meta .proj::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--faint)}
+.pill{font:500 11px/1 var(--mono);letter-spacing:.03em;padding:4px 7px;border-radius:5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.p-triage{color:var(--triage);background:var(--triage-soft)}
+.p-late{color:var(--late);background:var(--late-soft)}
+.p-due{color:var(--accent);background:var(--accent-soft)}
+.p-info{color:var(--info);background:var(--info-soft)}
+.p-quiet{color:var(--muted);background:var(--sunk);box-shadow:inset 0 0 0 1px var(--line)}
+.step{background:var(--step);border-radius:8px;padding:8px 10px;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.step span{display:block;font:500 10px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.quote{color:var(--muted);font-size:14px;border-left:2px solid var(--line);padding-left:10px;overflow-wrap:anywhere;font-style:italic}
+.src{font:12px var(--mono);color:var(--faint);overflow-wrap:anywhere}
+details summary{cursor:pointer;font-size:13px;color:var(--muted);list-style:none;display:inline-flex;gap:6px;align-items:center}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"›";display:inline-block;transition:transform .15s;font-size:15px;line-height:1}
+details[open] summary::before{transform:rotate(90deg)}
+details .notes{white-space:pre-wrap;font-size:13px;color:var(--muted);margin-top:6px;overflow-wrap:anywhere;background:var(--sunk);border-radius:8px;padding:8px 10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:2px;padding-top:2px}
+.actions .end{margin-left:auto;display:flex;gap:6px;align-items:center}
+.btn{font:600 13px var(--body);border-radius:8px;padding:6px 12px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:inline-flex;gap:6px;align-items:center;line-height:1.3}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{border-color:transparent;color:var(--muted);background:transparent}
+.btn.ghost:hover{color:var(--ink)}
+.claude{font:600 13px var(--body);border-radius:8px;padding:6px 10px;text-decoration:none;display:inline-flex;gap:7px;align-items:center;color:var(--ink);background:var(--sunk);border:1px solid var(--line);line-height:1.3}
+.claude svg{width:12px;height:12px;fill:var(--accent)}
+.claude small{font:11px var(--mono);color:var(--muted);max-width:16ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.claude:hover{border-color:var(--accent)}
+.btn.draft{background:var(--im);border-color:var(--im);color:var(--surface);text-decoration:none}
+.btn.draft svg{width:14px;height:14px}
+.btn.draft:hover{filter:brightness(1.08)}
+.claude.live{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.claude.live svg{fill:none;stroke:currentColor}
+.claude.live small{color:var(--accent-ink);opacity:.75}
+.notion{width:32px;height:32px;border-radius:8px;display:inline-grid;place-items:center;color:var(--muted);text-decoration:none;border:1px solid transparent;font-size:15px}
+.notion:hover{border-color:var(--line);color:var(--ink)}
+.err{font-size:13px;color:var(--late)}
+/* feed: each category gets a full-height coloured rail with a large icon */
+.card.feed{grid-template-columns:88px minmax(0,1fr);padding:0;column-gap:0;overflow:hidden;border-color:color-mix(in srgb,var(--c) 28%,var(--line))}
+.card.feed > .body{padding:14px 16px 12px}
+.card.feed::before{display:none}
+.rail{background:var(--cs);color:var(--c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 6px;border-right:1px solid color-mix(in srgb,var(--c) 18%,transparent);text-align:center}
+.rail svg{width:46px;height:46px;flex:none}
+.rail .lbl{font:600 11px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;overflow-wrap:anywhere}
+.rail .sub{font:500 10px/1.25 var(--mono);opacity:.8;overflow-wrap:anywhere}
+.cat-tri{--c:var(--c-tri);--cs:var(--c-tri-s)} .cat-due{--c:var(--c-due);--cs:var(--c-due-s)} .cat-open{--c:var(--c-open);--cs:var(--c-open-s)}
+.cat-idea{--c:var(--c-idea);--cs:var(--c-idea-s)} .cat-agent{--c:var(--c-agent);--cs:var(--c-agent-s)}
+.card.feed .why .k:first-child{color:var(--c)}
+.card.feed .step span{color:var(--c)}
+.card.feed .step{background:color-mix(in srgb,var(--cs) 55%,var(--sunk))}
+@media (max-width:480px){ .card.feed{grid-template-columns:64px minmax(0,1fr)} .rail svg{width:34px;height:34px} .card.feed > .body{padding:12px 12px 10px} }
+.why{margin-bottom:-2px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font:500 11px/1.3 var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.why .k{color:var(--muted)}
+.why .k.t{color:var(--triage)} .why .k.l{color:var(--late)} .why .k.a{color:var(--accent)} .why .k.i{color:var(--nt)}
+.why .sep{opacity:.6}
+.more{text-align:center;padding:18px 0;color:var(--faint);font:500 12px var(--mono);letter-spacing:.04em}
+.activity .said{font-size:14px;line-height:1.45;color:var(--ink);overflow-wrap:anywhere}
+.activity .on{font-size:13px;color:var(--muted)}
+.activity .on a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+.activity .on a:hover{border-color:var(--accent)}
+/* quick update */
+.upd{display:grid;gap:8px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:10px}
+.upd textarea{width:100%;min-height:64px;resize:vertical;font:14px/1.45 var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.upd textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+.upd .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.upd .st{display:flex;gap:2px;padding:2px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.upd .st button{font:500 12px var(--body);border:0;background:transparent;color:var(--muted);padding:5px 9px;border-radius:6px;cursor:pointer}
+.upd .st button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.upd .hint{font:11px var(--mono);color:var(--faint);margin-left:auto}
+/* agents */
+.agents{display:grid;gap:12px;align-items:start;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr))}
+.agent{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);display:grid;gap:10px;align-content:start;min-width:0}
+.agent.quiet{background:var(--sunk);box-shadow:none}
+.agent .hd{display:flex;gap:12px;align-items:center}
+.agent .hd h3{font-size:16px;font-weight:600}
+.agent .role{font-size:13px;color:var(--muted)}
+.agent .stats{display:flex;gap:16px;flex-wrap:wrap;font:500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.agent .stats b{color:var(--ink);font-weight:500}
+.agent ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.agent li{font-size:13px;line-height:1.4;border-left:2px solid var(--line);padding-left:10px;min-width:0}
+.agent li a{color:var(--ink);text-decoration:none;font-weight:600}
+.agent li a:hover{text-decoration:underline}
+.agent li .t{display:block;color:var(--muted);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.agent li .d{font:11px var(--mono);color:var(--faint)}
+.agent.rest{grid-column:1 / -1}
+.agent.rest .names{display:flex;flex-wrap:wrap;gap:8px}
+.agent.rest .nm{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);padding:4px 10px 4px 4px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.agent.rest .nm .av{width:24px;height:24px;border-radius:7px;font-size:10px}
+.av{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:600 12px var(--mono);color:var(--surface);flex:none}
+.meta .via{color:var(--faint)}
+details.stale{margin-top:6px}
+details.stale > summary{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;padding:12px 14px;border:1px dashed var(--line);border-radius:12px;font-size:14px;color:var(--ink)}
+details.stale > summary span:first-child{font-weight:600}
+details.stale > summary .n{font-size:13px;color:var(--muted)}
+details.stale[open] > summary{margin-bottom:10px}
+
+/* lead: channel avatar */
+.ch{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:600 12px var(--mono);color:var(--surface);background:var(--faint)}
+.ch.pj{background:var(--sunk);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line);font-size:11px}
+.ch.wa{background:var(--wa)} .ch.gm{background:var(--gm)} .ch.nt{background:var(--nt)} .ch.im{background:var(--im)} .ch.mt{background:var(--mt)}
+/* lead: date block */
+.date{width:46px;text-align:center;border-radius:10px;padding:5px 0 6px;background:var(--sunk);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.date .m{font:500 10px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.date .d{font:700 20px/1.05 var(--display);color:var(--ink)}
+.date .r{font:500 9.5px/1.3 var(--mono);color:var(--muted);letter-spacing:.02em}
+.date.late{background:var(--late-soft);border-color:transparent}
+.date.late .m,.date.late .d,.date.late .r{color:var(--late)}
+.date.today{background:var(--accent-soft);border-color:transparent}
+.date.today .m,.date.today .d,.date.today .r{color:var(--accent)}
+
+.demo-banner{background:var(--ink);color:var(--bg);font:500 13px/1.45 var(--body);padding:10px 16px;text-align:center}
+.demo-banner b{font-weight:600}
+.demo-banner a{color:var(--bg);font-weight:600}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--muted)}
+footer a{color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:10px;font-size:14px;max-width:calc(100% - 32px);z-index:5;display:flex;gap:14px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.toast button{font:600 13px var(--body);background:none;border:0;color:var(--bg);text-decoration:underline;cursor:pointer;padding:0}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px;z-index:6}
+.sheet-card{background:var(--surface);color:var(--ink);border-radius:12px;padding:18px;width:min(640px,100%);display:grid;gap:10px}
+.sheet-card textarea{width:100%;min-height:220px;font:13px/1.5 var(--mono);background:var(--sunk);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+.sheet-card .row{display:flex;justify-content:flex-end}
+/* questions */
+.q-kind{font:500 11px/1 var(--mono);letter-spacing:.03em;padding:4px 7px;border-radius:5px;background:var(--sunk);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.q-text{font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+.card.answered{opacity:.6}
+/* side feedback button: fixed to the right edge, opens a small panel */
+.fb-tab{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:4;writing-mode:vertical-rl;font:600 12px var(--body);letter-spacing:.04em;
+  background:var(--ink);color:var(--bg);border:0;border-radius:8px 0 0 8px;padding:12px 7px;cursor:pointer;display:flex;gap:7px;align-items:center;box-shadow:var(--shadow)}
+.fb-tab svg{width:12px;height:12px;fill:var(--accent);transform:rotate(90deg)}
+.fb-tab:hover{padding-right:10px}
+.fb-panel{position:fixed;right:44px;top:50%;transform:translateY(-50%);z-index:5;width:min(320px,calc(100vw - 64px));background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.fb-panel h3{font-size:16px;font-weight:600}
+.fb-panel p{margin:0;font-size:13px;color:var(--muted)}
+.fb-panel textarea{width:100%;min-height:72px;resize:vertical;font:14px/1.45 var(--body);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.fb-panel .row{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.fb-panel a.btn{text-decoration:none}
+.fb-panel .hint{font:11px var(--mono);color:var(--faint);margin-right:auto}
+@media (max-width:480px){ .fb-tab{padding:10px 5px;font-size:11px} .fb-panel{right:36px} }
+.skel{height:92px;border-radius:12px;background:linear-gradient(90deg,var(--surface),var(--sunk),var(--surface));background-size:200% 100%;border:1px solid var(--line)}
+@media (prefers-reduced-motion:no-preference){.card{transition:opacity .15s}.skel{animation:sh 1.4s linear infinite}@keyframes sh{to{background-position:-200% 0}}}
+@media (max-width:480px){
+  .card{padding:12px 12px 10px;column-gap:12px}
+  .claude small{display:none}
+  .actions .end{margin-left:0}
+}
+</style>
+
+<div class="demo-banner" id="demoBanner" role="note" hidden></div>
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span id="today">Inbox</span><span class="livewrap"><span class="live" id="live"><i></i><span id="statusLine">Connecting to Notion…</span></span><button class="refresh" id="refreshBtn" type="button" title="Fetch the latest from Notion now">Refresh</button></span></div>
+    <h1>Inbox</h1>
+    <p class="summary" id="summary">Loading what's waiting on you…</p>
+  </header>
+
+  <div class="notice" id="notice" hidden></div>
+
+  <nav class="tabs" aria-label="Sections"><div class="seg">
+    <button class="tab" data-tab="feed" aria-pressed="true">Feed</button>
+    <button class="tab" data-tab="triage" aria-pressed="false">Triage <span class="n" id="n-triage">·</span></button>
+    <button class="tab" data-tab="due" aria-pressed="false">Due <span class="n" id="n-due">·</span></button>
+    <button class="tab" data-tab="open" aria-pressed="false">Open <span class="n" id="n-open">·</span></button>
+    <button class="tab" data-tab="notes" aria-pressed="false">Notes <span class="n" id="n-notes">·</span></button>
+    <button class="tab" data-tab="questions" aria-pressed="false">Questions <span class="n" id="n-questions">·</span></button>
+    <button class="tab" data-tab="agents" aria-pressed="false">Agents <span class="n" id="n-agents">·</span></button>
+  </div><div class="projbar" id="projBar" role="group" aria-label="Show one project" hidden></div></nav>
+
+  <section data-sec="feed">
+    <div class="sec-head"><h2>For you</h2><span class="count" id="c-feed"></span></div>
+    <p class="sec-desc">Everything mixed and ranked: what's urgent, what the agents just did, quick wins and ideas. The order reshuffles a little each day; Not now hides a card until tomorrow.</p>
+    <div class="list" id="l-feed"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    <div id="feedMore" class="more" hidden></div>
+  </section>
+
+  <section data-sec="triage">
+    <div class="sec-head"><h2>Triage</h2><span class="count" id="c-triage"></span></div>
+    <p class="sec-desc">Possible tasks the agents found overnight. Keep sends one to To Do; Drop tells the agents not to suggest it again.</p>
+    <div class="list" id="l-triage"><div class="skel"></div><div class="skel"></div></div>
+  </section>
+
+  <section data-sec="due">
+    <div class="sec-head"><h2>Due soon</h2><span class="count" id="c-due"></span></div>
+    <p class="sec-desc">Overdue, or due in the next 7 days. Yours and shared.</p>
+    <div class="list" id="l-due"><div class="skel"></div></div>
+  </section>
+
+  <section data-sec="open">
+    <div class="sec-head"><h2>Open</h2><span class="count" id="c-open"></span></div>
+    <p class="sec-desc">Everything else on your plate, most important first.</p>
+    <div class="list" id="l-open"><div class="skel"></div></div>
+  </section>
+
+  <section data-sec="notes">
+    <div class="sec-head"><h2>From your notes</h2><span class="count" id="c-notes"></span></div>
+    <p class="sec-desc" id="notes-desc">Ideas from your Apple Notes that aren't tracked yet. The Sweeper adds new ones overnight. Add makes a To Do task with the first step and your note quoted.</p>
+    <div class="list" id="l-notes"><div class="skel"></div></div>
+  </section>
+
+  <section data-sec="questions">
+    <div class="sec-head"><h2>Questions</h2><span class="count" id="c-questions"></span></div>
+    <p class="sec-desc" id="q-desc">What the agents asked you in the morning brief. Answer opens Claude Code in life-agents with the question loaded; it records your answer as a rule and ticks it off here.</p>
+    <div class="list" id="l-questions"><div class="skel"></div></div>
+  </section>
+
+  <section data-sec="agents">
+    <div class="sec-head"><h2>Agents</h2><span class="count" id="c-agents"></span></div>
+    <p class="sec-desc">What each overnight agent has been doing on your tasks, read from the lines they leave in task Notes. Agents that only read or propose show here once they touch a task.</p>
+    <div class="agents" id="l-agents"><div class="skel"></div><div class="skel"></div></div>
+  </section>
+
+  <footer>
+    <a id="footTriage" class="foot" href="#" target="_blank" rel="noopener" hidden>Triage view in Notion ↗</a>
+    <a id="footAll" class="foot" href="#" target="_blank" rel="noopener" hidden>All tasks ↗</a>
+    <span>▶ Claude opens iTerm in the task's project folder with /task loaded.</span>
+  </footer>
+</div>
+
+<button class="fb-tab" id="fbTab" type="button" aria-expanded="false" aria-controls="fbPanel" title="Open Claude Code with a screenshot of this page to improve it"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.8v8.4c0 .5.5.8.9.5l6.6-4.2a.6.6 0 0 0 0-1L3.9 1.3c-.4-.3-.9 0-.9.5z"/></svg>Improve this page</button>
+<div class="fb-panel" id="fbPanel" role="dialog" aria-labelledby="fbTitle" hidden>
+  <h3 id="fbTitle">Improve this page</h3>
+  <p>Opens Claude Code with a screenshot and what's on screen. Say what's off, or leave it blank.</p>
+  <textarea id="fbNote" placeholder="e.g. the Due cards are too tall on my phone"></textarea>
+  <div class="row"><span class="hint">↵ open · ⇧↵ new line</span><button class="btn ghost" id="fbCancel" type="button">Cancel</button><a class="btn primary" id="fbGo" href="#" target="_blank" rel="noopener">Open Claude</a></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden><span id="toastMsg"></span><button id="toastUndo" hidden>Undo</button></div>
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h3 id="sheetTitle">Copy this into Claude Code</h3>
+    <textarea id="sheetText" readonly></textarea>
+    <div class="row"><button class="btn" id="sheetClose">Close</button></div>
+  </div>
+</div>
+
+<!-- INBOX_BUILD -->
+<script>
+
+const SERVER = "Notion";
+const PRI = {Urgent:0, High:1, Medium:2, Low:3};
+// INBOX_MODE is set by web/build.py: "live" reads the viewer's Notion and this page's db; "demo" runs on window.DEMO.
+const MODE = typeof INBOX_MODE === "undefined" ? "live" : INBOX_MODE;
+// Everything about one person's workspace. Live: the db doc config/workspace, written by /setup. Demo: DEMO.workspace.
+function normalizeWorkspace(w){
+  w = w || {};
+  return {name:w.name||"Inbox", ownerName:w.ownerName||"", ownerAssignee:w.ownerAssignee||w.ownerName||"",
+    delegateName:w.delegateName||"", home:w.home||"", tasksDs:w.tasksDs||"", views:w.views||{}, footer:w.footer||{},
+    folderFallback:w.folderFallback||{}, projectThemes:w.projectThemes||{}, categoryThemes:w.categoryThemes||null,
+    themes:w.themes||{}, setupUrl:w.setupUrl||""};
+}
+let WORKSPACE = normalizeWorkspace(null);
+function tasksDsId(){ return String(WORKSPACE.tasksDs).replace(/^collection:\/\//,""); }
+function withDelegate(){ return WORKSPACE.delegateName ? "With "+WORKSPACE.delegateName : "Shared"; }
+
+// Ideas from Apple Notes live in this page's db: doc notes/ideas ({synced, items:[{id,p,t,d,q,step,check?}]}), written by
+// /team from life-agents bin/inbox_notes.py, which merges what the Sweeper pulls from changed notes each night.
+// Add or Skip writes notesdone/<id> so an idea stays gone on every device.
+
+const state = {notes:null, notesSynced:null, notesErr:null, notesDone:{}, mcp:null, triage:null, open:null, projects:{}, projCat:{}, folders:{}, errors:{}, hidden:new Set(), added:{}, tab:"all", storedAt:null};
+try { state.added = JSON.parse(localStorage.getItem("inbox-added") || "{}"); } catch(e) {}
+try { state.tab = localStorage.getItem("inbox-tab") || "feed"; if(state.tab==="all") state.tab="feed"; } catch(e) {}
+{ const h=(location.hash||"").slice(1); if(["feed","triage","due","open","notes","questions","agents"].includes(h)) state.tab=h; }
+state.snoozed = {}; try { state.snoozed = JSON.parse(localStorage.getItem("inbox-snooze") || "{}"); } catch(e) {}
+state.feedShown = 12; state.lastOk = {};
+state.proj = null; try { state.proj = localStorage.getItem("inbox-proj") || null; } catch(e) {}
+
+const $ = id => document.getElementById(id);
+function el(tag, cls, text){ const e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+function clean(s){
+  return String(s||"").replace(/<br\s*\/?>/gi,"\n").replace(/\[([^\]]+)\]\((?:[^)]+)\)/g,"$1").replace(/\\([\\`*_{}\[\]()#+\-.!~$|>])/g,"$1").trim();
+}
+function pageId(url){ const m=String(url||"").match(/([0-9a-f]{32})(?:\?|$)/i); return m?m[1]:null; }
+function today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function parseDay(s){ if(!s) return null; const [y,m,d]=s.slice(0,10).split("-").map(Number); return new Date(y,m-1,d); }
+function fmtDay(d){ return d.toLocaleDateString(undefined,{day:"numeric",month:"short"}); }
+function projectsOf(r){ try{ return JSON.parse(r.Project||"[]").map(u=>state.projects[pageId(u)]).filter(Boolean);}catch(e){return [];} }
+// Projects with no Claude folder in Notion that still have a home on disk (from the project map in ~/CLAUDE.md).
+function folderOf(r){ try{ for(const u of JSON.parse(r.Project||"[]")){ const id=pageId(u); const f=state.folders[id]||WORKSPACE.folderFallback[state.projects[id]]; if(f) return f; } }catch(e){} return WORKSPACE.home; }
+// ▶ Claude goes through a small launcher on the owner's Mac (a localhost LaunchAgent,
+// not shipped yet). Artifact pages can't open claude-cli:// links, but they can open this http link
+// in a new tab; the launcher checks the token and opens Claude Code in iTerm with "<title> (/task <id>)".
+const LAUNCHER = "http://127.0.0.1:47321/task";
+// The launcher's token lives in the viewer's private db doc data/users/<id>/launcher (written by /setup), never in this
+// page. Without it, ▶ buttons open a prompt to paste into Claude Code instead.
+state.launchToken = null;
+function claudeLink(r){
+  const p=new URLSearchParams({id:pageId(r.url), dir:folderOf(r), title:clean(r.Task).slice(0,100), t:state.launchToken});
+  return LAUNCHER+"?"+p.toString();
+}
+function shortFolder(f){ return !f || f===WORKSPACE.home ? "home" : f.split("/").filter(Boolean).pop(); }
+function norm(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim(); }
+
+let toastT, undoFn=null;
+function toast(msg, undo){
+  $("toastMsg").textContent=msg; $("toast").hidden=false; undoFn=undo||null; $("toastUndo").hidden=!undo;
+  clearTimeout(toastT); toastT=setTimeout(()=>{$("toast").hidden=true; undoFn=null;}, 6000);
+}
+$("toastUndo").addEventListener("click",()=>{ const f=undoFn; $("toast").hidden=true; undoFn=null; if(f) f(); });
+
+function errorCopy(e){
+  const c=e&&e.code;
+  if(c==="server_not_connected") return "Notion isn't connected for you on claude.ai. Add it in Settings → Connectors, then reload this page.";
+  if(c==="needs_reauth") return "Your Notion connection has expired. Reconnect Notion in claude.ai Settings → Connectors.";
+  if(c==="selection_required") return "You have more than one Notion connector. Choose one when claude.ai asks, then reload.";
+  if(c==="not_in_manifest") return "Notion is turned off for this page. Allow it from the page's connector prompt to see live tasks.";
+  if(c==="blocked_by_policy"||c==="approval_required") return "Your organization's policy blocks this Notion action here.";
+  if(c==="server_unavailable") return "Notion didn't answer just now. It will try again shortly.";
+  if(c==="tool_error" && /usage limit|usage_limit/i.test(e.message||"")) return "Notion's workspace usage limit for queries is used up for now. Try again later.";
+  if(c==="tool_error") return "Notion refused the request: " + (e.message||"no detail");
+  return "Notion couldn't be reached (" + (c||"unknown") + "). " + (e&&e.message||"");
+}
+const DENIALS = new Set(["needs_reauth","server_not_connected","blocked_by_policy","approval_required","not_in_manifest","selection_required"]);
+
+// ---------- rendering ----------
+const PLAY='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.8v8.4c0 .5.5.8.9.5l6.6-4.2a.6.6 0 0 0 0-1L3.9 1.3c-.4-.3-.9 0-.9.5z"/></svg>';
+function daysFrom(d){ return Math.round((d - today())/86400000); }
+function rel(n){ if(n===0) return "today"; if(n===1) return "tmrw"; if(n===-1) return "1d late"; return n<0 ? (-n)+"d late" : "in "+n+"d"; }
+function channel(src){
+  const s=String(src||"").toLowerCase();
+  if(s.startsWith("whatsapp")) return ["wa","WA"]; if(s.startsWith("gmail")||s.startsWith("email")) return ["gm","@"];
+  if(s.startsWith("apple note")||s.startsWith("note")) return ["nt","N"]; if(s.startsWith("imessage")||s.startsWith("message")) return ["im","iM"];
+  if(s.startsWith("meeting")||s.startsWith("vowen")) return ["mt","M"]; return ["",String(src||"?").trim().charAt(0).toUpperCase()||"?"];
+}
+function dateLead(d){
+  const n=daysFrom(d); const b=el("div","date"+(n<0?" late":n===0?" today":""));
+  b.append(el("div","m",d.toLocaleDateString(undefined,{month:"short"})), el("div","d",String(d.getDate())), el("div","r",rel(n)));
+  return b;
+}
+function stepBox(text){ const s=el("div","step"); s.append(el("span",null,"First step"), document.createTextNode(text)); return s; }
+// Sessions launched from this page (per browser). The launcher itself decides: focus the open iTerm session, or start one.
+state.launched = {}; try { state.launched = JSON.parse(localStorage.getItem("inbox-launched") || "{}"); } catch(e) {}
+const BACK='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6.5 2.2 2.6 6l3.9 3.8M3 6h6.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function claudeBtn(r){
+  const pid=pageId(r.url); const live=!!state.launched[pid];
+  const cl=el("a","claude"+(live?" live":"")); cl.href=claudeLink(r); cl.target="_blank"; cl.rel="noopener";
+  cl.title= live ? "Bring its iTerm window to the front (starts a new session if you closed it)" : "Open Claude Code in iTerm ("+folderOf(r)+") with /task loaded";
+  cl.insertAdjacentHTML("beforeend", live?BACK:PLAY);
+  cl.append(document.createTextNode(live?"Back to Claude":"Claude"), el("small",null, live?"since "+new Date(state.launched[pid]).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}):shortFolder(folderOf(r))));
+  cl.addEventListener("click",e=>{ if(!state.launchToken){ e.preventDefault(); showSheet(clean(r.Task)+" (/task "+pageId(r.url)+")", "Open Claude Code in "+folderOf(r)+" and paste this"); } onLaunch(r); });
+  return cl;
+}
+async function onLaunch(r){
+  const pid=pageId(r.url); const first=!state.launched[pid];
+  state.launched[pid]=state.launched[pid]||Date.now(); try{ localStorage.setItem("inbox-launched",JSON.stringify(state.launched)); }catch(e){}
+  const from=r.Status;
+  if(state.mcp && from!=="In Progress"){
+    r.Status="In Progress"; setTimeout(render,50);
+    try{ await state.mcp.callTool(SERVER,"notion-update-page",{page_id:pid, command:"update_properties", properties:{Status:"In Progress"}, allow_async:false},{cache:false}); refresh();
+      toast("Marked In Progress"+(from==="Triage"?" (kept from Triage)":"")+".", async ()=>{ try{ await state.mcp.callTool(SERVER,"notion-update-page",{page_id:pid, command:"update_properties", properties:{Status:from}, allow_async:false},{cache:false}); r.Status=from; render(); refresh(); }catch(e){ toast("Couldn't undo. "+errorCopy(e)); } }); }
+    catch(e){ r.Status=from; render(); toast("Opened Claude, but Notion didn't take the In Progress status. "+errorCopy(e)); }
+  } else if(first) setTimeout(render,50);
+}
+// A Claude session that wrote a Gmail draft for this task puts its link in the task's Draft property.
+function draftUrl(r){ const u=clean(r.Draft); return /^https:\/\/mail\.google\.com\//.test(u) ? u : null; }
+function draftBtn(r){ const u=draftUrl(r); if(!u) return null; const a=el("a","btn draft"); a.href=u; a.target="_blank"; a.rel="noopener"; a.title="Open the Gmail draft written for this task";
+  a.insertAdjacentHTML("beforeend",'<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 4.5 8 8.6l5.5-4.1" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>');
+  a.append(document.createTextNode("Open draft")); return a; }
+function notionBtn(url){ const a=el("a","notion","↗"); a.href=url; a.target="_blank"; a.rel="noopener"; a.title="Open in Notion"; a.setAttribute("aria-label","Open in Notion"); return a; }
+
+function card(r, kind, why){
+  const due=parseDay(r["date:Due Date:start"]);
+  const c=el("div","card"); c.dataset.pid=pageId(r.url)||"";
+  if(kind==="triage"){ const [k,t]=channel(clean(r.Source)); const lead=el("div","lead"); lead.appendChild(el("div","ch "+k,t)); c.appendChild(lead); }
+  else if(kind==="due" && due){ const lead=el("div","lead"); lead.appendChild(dateLead(due)); c.appendChild(lead); }
+  else if(why){ const lead=el("div","lead"); const pj=projectsOf(r)[0]; lead.appendChild(el("div","ch pj",pj?pj.replace(/[^A-Za-z0-9 ]/g,"").split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase():"—")); c.appendChild(lead); }
+  else { c.classList.add("nolead"); if(r.Priority==="Urgent") c.classList.add("urgent"); else if(r.Priority==="High") c.classList.add("high"); }
+  const b=el("div","body");
+  if(why) b.appendChild(why);
+  b.appendChild(el("h3",null,clean(r.Task)||"Untitled"));
+  const meta=el("div","meta");
+  if(why){ if(r.Assignee==="Both") meta.appendChild(el("span","pill p-quiet",withDelegate()));
+    if(kind==="triage" && clean(r.Source)) meta.appendChild(el("span","via","via "+clean(r.Source).split(" · ").slice(0,2).join(" · ")));
+  } else {
+  if(kind==="open" && due) meta.appendChild(el("span","pill p-quiet","Due "+fmtDay(due)));
+  if(r.Status==="In Progress") meta.appendChild(el("span","pill p-info","In progress"));
+  if(r.Status==="Blocked") meta.appendChild(el("span","pill p-late","Blocked"));
+  if(kind==="due" && (r.Priority==="Urgent"||r.Priority==="High")) meta.appendChild(el("span","pill "+(r.Priority==="Urgent"?"p-late":"p-triage"),r.Priority));
+  if(r.Assignee==="Both") meta.appendChild(el("span","pill p-quiet",withDelegate()));
+  projectsOf(r).forEach(p=>meta.appendChild(el("span","proj",p)));
+  if(kind==="triage" && clean(r.Source)) meta.appendChild(el("span","via","via "+clean(r.Source).replace(/ · (\d{4})-(\d\d)-(\d\d)$/,(m,y,mo,d)=>" · "+fmtDay(new Date(+y,+mo-1,+d)))));
+  }
+  if(meta.childNodes.length) b.appendChild(meta);
+  if(clean(r["First step"])) b.appendChild(stepBox(clean(r["First step"])));
+  if(clean(r.Notes) && !why){ const d=el("details"); d.appendChild(el("summary",null,"Notes")); d.appendChild(el("div","notes",clean(r.Notes))); b.appendChild(d); }
+  const a=el("div","actions"); const end=el("div","end");
+  if(kind==="triage"){
+    const keep=el("button","btn primary","Keep"); keep.addEventListener("click",()=>setStatus(r,"To Do","Triage",c,"Kept"));
+    const drop=el("button","btn","Drop"); drop.addEventListener("click",()=>setStatus(r,"Dropped","Triage",c,"Dropped"));
+    a.append(keep,drop);
+  } else {
+    const done=el("button","btn","Mark done"); done.addEventListener("click",()=>setStatus(r,"Done",r.Status||"To Do",c,"Done"));
+    const upd=el("button","btn","Update"); upd.title="Add a note or change status. The card moves down the feed for a few days.";
+    upd.addEventListener("click",()=>openUpdate(r,c,b));
+    a.append(upd,done);
+  }
+  if(why) a.appendChild(snoozeBtn("t:"+pageId(r.url)));
+  const dr=draftBtn(r); if(dr) a.insertBefore(dr, a.firstChild);
+  end.append(claudeBtn(r), notionBtn(r.url)); a.appendChild(end); b.appendChild(a);
+  c.appendChild(b);
+  return c;
+}
+
+// Under a project filter an empty list says so and offers the way back to everything.
+function emptyBox(text){
+  if(!state.proj) return el("div","empty",text);
+  const e=el("div","empty","Nothing for "+state.proj+" here."); const b=el("button","btn ghost","Show all");
+  b.addEventListener("click",()=>setProj(null)); e.appendChild(b); return e;
+}
+function fill(listId, groups, emptyText, kind){
+  const l=$(listId); l.replaceChildren();
+  const total=groups.reduce((n,g)=>n+g.items.length,0);
+  if(!total){ if(emptyText) l.appendChild(kind?emptyBox(emptyText):el("div","empty",emptyText)); return; } // no kind: an error message
+  groups.forEach(g=>{ if(!g.items.length) return; if(g.label) l.appendChild(el("div","group-label",g.label)); g.items.forEach(r=>l.appendChild(card(r,kind))); });
+}
+
+function plural(n,w){ return n+" "+w+(n===1?"":"s"); }
+function render(){
+  // Don't redraw under an open Update panel; catch up when it closes.
+  if(document.querySelector(".upd")){ state.pendingRender=true; return; }
+  const seen = r => !state.hidden.has(pageId(r.url));
+  const vis = r => seen(r) && inProj(rowProj(r));
+  let t=null, overdue=0, week=0;
+  if(state.errors.triage && !state.triage) fill("l-triage",[],errorCopy(state.errors.triage));
+  else if(state.triage){ t=state.triage.filter(vis); fill("l-triage",[{items:t}],"All clear. The agents add new ones overnight.","triage"); setCount("triage",t.length,"suggestion"); }
+  if(state.errors.open && !state.open){ fill("l-due",[],errorCopy(state.errors.open)); fill("l-open",[],errorCopy(state.errors.open)); }
+  else if(state.open){
+    const rows=state.open.filter(vis);
+    const dd=r=>parseDay(r["date:Due Date:start"]);
+    const due=rows.filter(r=>{const d=dd(r); return d && daysFrom(d)<=7;}).sort((a,b)=>dd(a)-dd(b));
+    const stale=due.filter(r=>daysFrom(dd(r))<-14), late=due.filter(r=>daysFrom(dd(r))<0 && daysFrom(dd(r))>=-14), soon=due.filter(r=>daysFrom(dd(r))>=0);
+    // The hero sentence counts everything, whatever project is picked.
+    state.open.filter(seen).forEach(r=>{ const d=dd(r); if(!d) return; const n=daysFrom(d); if(n<0) overdue++; else if(n<=7) week++; });
+    const rest=rows.filter(r=>!due.includes(r));
+    const byPri=p=>rest.filter(r=>(r.Priority||"Medium")===p).sort((a,b)=>String(a["date:Due Date:start"]||"9").localeCompare(String(b["date:Due Date:start"]||"9")));
+    const multi=[late,soon,stale].filter(x=>x.length).length>1;
+    fill("l-due",[{label:multi?"Overdue":"",items:late},{label:multi?"This week":"",items:soon}],stale.length?"":"Nothing due in the next 7 days.","due");
+    if(stale.length){ const d=el("details","stale"); const sm=el("summary",null,""); sm.append(el("span",null,"Long overdue"), el("span","n",plural(stale.length,"task")+" more than 2 weeks late, probably need a new date or Drop")); d.appendChild(sm);
+      const inner=el("div","list"); stale.forEach(r=>inner.appendChild(card(r,"due"))); d.appendChild(inner); $("l-due").appendChild(d); }
+    setCount("due",due.length,"task");
+    fill("l-open",[{label:"Urgent",items:byPri("Urgent")},{label:"High",items:byPri("High")},{label:"Medium",items:byPri("Medium")},{label:"Low",items:byPri("Low")}],"No other open tasks.","open");
+    setCount("open",rest.length,"task",state.openMore);
+  }
+  renderNotes(); renderFeed(); renderAgents(); renderProjBar();
+  if(state.triage||state.open){
+    const parts=[];
+    if(t){ const tn=state.triage.filter(seen).length; parts.push(tn?`<b class="t">${tn}</b> to triage`:"nothing to triage"); }
+    if(state.open){ if(overdue) parts.push(`<b class="l">${overdue}</b> overdue`); parts.push(week?`<b>${week}</b> due this week`:"nothing else due this week"); }
+    const s=parts.length>1 ? parts.slice(0,-1).join(", ")+" and "+parts[parts.length-1] : parts[0];
+    $("summary").innerHTML = s.charAt(0).toUpperCase()+s.slice(1)+".";
+    updateLive();
+  }
+  applyTab();
+}
+function setCount(k,n,w,more){ $("c-"+k).textContent=plural(n,w)+(more?"+":""); $("n-"+k).textContent=n+(more?"+":""); }
+
+function openNotes(){
+  const titles=new Set([...(state.triage||[]),...(state.open||[])].map(r=>norm(clean(r.Task))));
+  return (state.notes||[]).filter(n=>n && n.id && n.t && !state.added[n.id] && !state.notesDone[n.id] && !titles.has(norm(n.t)))
+    .sort((a,b)=>String(b.d||"").localeCompare(String(a.d||"")));
+}
+function renderNotes(){
+  const l=$("l-notes");
+  if(state.notesErr){ l.replaceChildren(el("div","empty",state.notesErr)); $("n-notes").textContent="–"; return; }
+  if(!state.notes) return;
+  l.replaceChildren();
+  const sy=state.notesSynced ? new Date(state.notesSynced) : null;
+  $("notes-desc").textContent="Ideas from your Apple Notes that aren't tracked yet"+(sy && !isNaN(sy)?", last pulled "+fmtDay(sy)+" "+sy.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):"")+". The Sweeper adds new ones overnight. Add makes a To Do task with the first step and your note quoted.";
+  const items=openNotes().filter(n=>inProj(noteProj(n)));
+  setCount("notes",items.length,"idea");
+  if(!items.length){ l.appendChild(emptyBox("Every idea from your notes is in Notion or skipped. New ones arrive after the overnight run.")); return; }
+  items.forEach(n=>l.appendChild(noteCard(n)));
+}
+function noteCard(n, why){
+  const c=el("div","card"); const lead=el("div","lead"); lead.appendChild(el("div","ch nt","N")); c.appendChild(lead);
+  const b=el("div","body");
+  if(why) b.appendChild(why);
+  b.appendChild(el("h3",null,n.t));
+  const meta=el("div","meta"); if(n.check) meta.appendChild(el("span","pill p-quiet","Check first")); if(!why) meta.appendChild(el("span",null,"Apple Note"+(n.note?" · "+n.note:"")+(n.d?" · "+fmtDay(parseDay(n.d)):""))); if(meta.childNodes.length) b.appendChild(meta);
+  if(n.q) b.appendChild(el("div","quote",n.q)); if(n.step) b.appendChild(stepBox(n.step));
+  const a=el("div","actions");
+  const add=el("button","btn primary", state.mcp ? "Add to Tasks" : "Copy prompt");
+  add.addEventListener("click",()=> state.mcp ? addNote(n,c) : copyPrompt(n));
+  const skip=el("button","btn ghost","Skip"); skip.addEventListener("click",()=>{ mark(n.id,"skipped"); render(); toast("Skipped. It won't show here again.",()=>unmark(n.id)); });
+  a.append(add,skip); if(why) a.appendChild(snoozeBtn("n:"+n.id)); b.appendChild(a); c.appendChild(b);
+  return c;
+}
+
+// ---------- agents ----------
+const AGENTS = [
+  {id:"sweeper", ab:"Sw", name:"Sweeper", color:"var(--accent)", role:"Keeps the board clean, turns messages into Triage tasks and your Apple Notes into ideas on the Notes tab."},
+  {id:"clocks", name:"Clocks", color:"var(--mt)", role:"Deadlines, event dates and the checklists that lead up to them."},
+  {id:"finance", name:"Finance", color:"var(--nt)", role:"Bills, subscriptions, tax deadlines and the bank ledger."},
+  {id:"comms", name:"Comms", color:"var(--gm)", role:"Unanswered email and drafted replies for /team."},
+  {id:"clients", name:"Clients", color:"var(--wa)", role:"Clients waiting on you, conflicts and paperwork gaps."},
+  {id:"opportunities", ab:"Gr", name:"Opportunities", color:"var(--im)", role:"Grants, open calls and gigs that fit what you're building, twice a week."},
+  {id:"scout", name:"Scout", color:"var(--triage)", role:"One idea a night through a different lens."},
+  {id:"ops", name:"Ops", color:"var(--info)", role:"Logins, updates, backups and the Mac itself."},
+  {id:"bookkeeper", name:"Bookkeeper", color:"var(--muted)", role:"Classifies transactions for the books."},
+];
+const TAG = /\[(sweeper|clocks|finance|comms|clients|opportunities|scout|ops|bookkeeper)\b([^\]]*)\]\s*([^\n\[]*)/gi;
+function tagDate(t){
+  let m=t.match(/(\d{4})(\d{2})(\d{2})-\d{6}/); if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  m=t.match(/(\d{4})-(\d{2})-(\d{2})/); if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+  return null;
+}
+function activityOf(rows){
+  const out=[];
+  rows.forEach(r=>{ const notes=clean(r.Notes); let m; TAG.lastIndex=0;
+    while((m=TAG.exec(notes))){ const d=tagDate(m[2]); out.push({agent:m[1].toLowerCase(), date:d, text:m[3].trim(), task:r}); } });
+  return out.sort((a,b)=>(b.date||0)-(a.date||0));
+}
+function renderAgents(){
+  const l=$("l-agents"); if(!state.open && !state.triage) return;
+  const rows=[...(state.triage||[]),...(state.open||[])];
+  const acts=activityOf(rows);
+  l.replaceChildren(); let active=0; const quiet=[];
+  AGENTS.forEach(ag=>{
+    const mine=acts.filter(x=>x.agent===ag.id);
+    const tasks=new Set(mine.map(x=>pageId(x.task.url)));
+    const triage=ag.id==="sweeper" ? (state.triage||[]).length : 0;
+    const last=mine.find(x=>x.date);
+    if(!mine.length && !triage){ quiet.push(ag); return; }
+    active++;
+    const c=el("div","agent"+(mine.length||triage?"":" quiet"));
+    const hd=el("div","hd"); const av=el("div","av",ag.ab||ag.name.slice(0,2)); av.style.background=ag.color; hd.appendChild(av);
+    const t=el("div"); t.append(el("h3",null,ag.name), el("div","role",ag.role)); hd.appendChild(t); c.appendChild(hd);
+    const st=el("div","stats");
+    const stat=(n,w)=>{ const s=el("span"); s.append(el("b",null,String(n)), document.createTextNode(" "+w)); return s; };
+    st.appendChild(stat(tasks.size, tasks.size===1?"open task":"open tasks"));
+    if(ag.id==="sweeper") st.appendChild(stat(triage,"in Triage"));
+    st.appendChild(el("span",null, last ? "last seen "+relDay(last.date) : "no task notes yet"));
+    c.appendChild(st);
+    if(mine.length){ const ul=el("ul");
+      mine.slice(0,3).forEach(x=>{ const li=el("li"); const a=el("a",null,clean(x.task.Task)); a.href=x.task.url; a.target="_blank"; a.rel="noopener";
+        li.append(a, el("span","t",x.text||"(updated)"), el("span","d",x.date?fmtDay(x.date):"")); ul.appendChild(li); });
+      c.appendChild(ul); }
+    l.appendChild(c);
+  });
+  if(quiet.length){ const c=el("div","agent quiet rest"); c.appendChild(el("div","role","No notes on your open tasks yet. These agents mostly read, propose ideas or report in the morning brief:"));
+    const nm=el("div","names"); quiet.forEach(ag=>{ const n=el("span","nm"); n.title=ag.role; const av=el("span","av",ag.ab||ag.name.slice(0,2)); av.style.background=ag.color; n.append(av, document.createTextNode(ag.name)); nm.appendChild(n); }); c.appendChild(nm); l.appendChild(c); }
+  $("c-agents").textContent=active+" of "+AGENTS.length+" active on your tasks"; $("n-agents").textContent=active;
+}
+function relDay(d){ const n=-daysFrom(d); return n<=0?"today":n===1?"yesterday":n+" days ago"; }
+
+// ---------- feed ----------
+function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0)/4294967295; }
+const DAYKEY=new Date().toISOString().slice(0,10);
+function whyLine(parts){ const w=el("div","why"); parts.filter(Boolean).forEach((p,i)=>{ if(i) w.appendChild(el("span","sep","·")); w.appendChild(el("span","k "+(p[1]||""),p[0])); }); return w; }
+function snoozed(key){ const u=state.snoozed[key]; return u && u>Date.now(); }
+function snoozeBtn(key){ const b=el("button","btn ghost","Not now"); b.title="Hide from the feed until tomorrow";
+  b.addEventListener("click",()=>{ state.snoozed[key]=Date.now()+20*3600e3; try{localStorage.setItem("inbox-snooze",JSON.stringify(state.snoozed));}catch(e){} renderFeed(); toast("Hidden until tomorrow.",()=>{ delete state.snoozed[key]; try{localStorage.setItem("inbox-snooze",JSON.stringify(state.snoozed));}catch(e){} renderFeed(); }); });
+  return b; }
+function quickWin(step){ const m=String(step||"").match(/\((\d+)\s*(?:to\s*\d+\s*)?min/i); return m && +m[1]<=5; }
+function scoreTask(r, kind, acts){
+  let s=0; const why=[]; const due=parseDay(r["date:Due Date:start"]); const proj=projectsOf(r)[0];
+  if(kind==="triage"){ s+=55; why.push(["New from "+(channel(clean(r.Source))[0]?clean(r.Source).split(" · ")[0]:"the agents"),"t"]); }
+  const pri={Urgent:45,High:28,Medium:14,Low:4}[r.Priority]??10; if(kind!=="triage") s+=pri;
+  if(due){ const n=daysFrom(due);
+    if(n<0 && n>=-14){ s+=48+n; why.push([rel(n),"l"]); }
+    else if(n<-14){ s+=6; why.push(["long overdue","l"]); }
+    else if(n<=7){ s+=44-5*n; why.push([n===0?"due today":"due "+rel(n),"l"]); }
+    else if(n<=21){ s+=10; why.push(["due "+fmtDay(due)]); } }
+  if(kind!=="triage" && (r.Priority==="Urgent"||r.Priority==="High")) why.push([r.Priority]);
+  if(r.Status==="In Progress"){ s+=10; why.push(["in progress","a"]); }
+  if(r.Status==="Blocked"){ s-=12; why.push(["blocked","l"]); }
+  if(quickWin(r["First step"])){ s+=9; why.push(["quick win","a"]); }
+  if(!clean(r["First step"])) s-=6;
+  const act=acts.find(x=>pageId(x.task.url)===pageId(r.url) && x.date && daysFrom(x.date)>=-2);
+  if(draftUrl(r)){ s+=16; why.push(["draft ready","a"]); }
+  const upd=recentlyUpdated(r);
+  if(upd){ s-=45; why.push(["you updated "+relDay(upd)]); }
+  if(act){ s+=12; why.push([AGENTS.find(a=>a.id===act.agent).name+" "+relDay(act.date),"a"]); }
+  s+=hash(pageId(r.url)+DAYKEY)*10;
+  return {s, why, proj, kind:"task", key:"t:"+pageId(r.url), r, k:kind};
+}
+function renderFeed(){
+  const l=$("l-feed"); if(!state.open && !state.triage && !state.mcpChecked) return;
+  const rows=[...(state.triage||[]),...(state.open||[])].filter(r=>!state.hidden.has(pageId(r.url)));
+  const acts=activityOf(rows);
+  let items=[];
+  (state.triage||[]).filter(r=>!state.hidden.has(pageId(r.url))).forEach(r=>items.push(scoreTask(r,"triage",acts)));
+  (state.open||[]).filter(r=>!state.hidden.has(pageId(r.url))).forEach(r=>{ const d=parseDay(r["date:Due Date:start"]); items.push(scoreTask(r, d&&daysFrom(d)<=7&&daysFrom(d)>=-14?"due":"open", acts)); });
+  openNotes().forEach(n=>{
+    const s=18+(n.check?-4:0)+hash(n.id+DAYKEY)*22; items.push({s, why:[["Idea from your notes","i"],n.d?[fmtDay(parseDay(n.d))]:null], proj:"notes", kind:"note", key:"n:"+n.id, n}); });
+  acts.filter(x=>x.date && daysFrom(x.date)>=-3 && x.text).slice(0,6).forEach((x,i)=>{
+    items.push({s:30-i*3+hash(x.text+DAYKEY)*6, why:[[AGENTS.find(a=>a.id===x.agent).name,"a"],[relDay(x.date)]], proj:"agent:"+x.agent, kind:"activity", key:"a:"+hash(x.text).toString(36), x}); });
+  items=items.filter(it=>!snoozed(it.key) && inProj(it.kind==="note"?noteProj(it.n):rowProj(it.kind==="activity"?it.x.task:it.r)));
+  // Greedy diversity pass: avoid three of the same project or kind in a row.
+  const out=[]; const pool=items.sort((a,b)=>b.s-a.s);
+  while(pool.length){
+    let best=0, bestS=-1e9;
+    for(let i=0;i<Math.min(pool.length,12);i++){ const it=pool[i]; let s=it.s;
+      const prev=out.slice(-2); if(prev.some(p=>p.proj&&p.proj===it.proj)) s-=14; if(prev.length===2 && prev.every(p=>p.kind===it.kind)) s-=10;
+      if(s>bestS){ bestS=s; best=i; } }
+    out.push(pool.splice(best,1)[0]);
+  }
+  state.feed=out;
+  $("c-feed").textContent=plural(out.length,"card"); 
+  l.replaceChildren();
+  if(!out.length){ l.appendChild(emptyBox("You're all caught up.")); $("feedMore").hidden=true; return; }
+  out.slice(0,state.feedShown).forEach(it=>l.appendChild(feedCard(it)));
+  const more=$("feedMore"); more.hidden=false;
+  more.textContent = out.length>state.feedShown ? "Scroll for more" : "You're all caught up · "+plural(out.length,"card");
+}
+const ICON = {
+  tri:'<path d="M4 13.5h4.2l1.6 2.6h4.4l1.6-2.6H20"/><path d="M6.2 5h11.6L20 13.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5.5z"/><path d="M12 2.5v6m-2.5-2.5L12 8.5 14.5 6"/>',
+  open:'<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 12.2l2.8 2.8L16.5 9"/>',
+  idea:'<path d="M9.5 18h5M10.3 21h3.4"/><path d="M12 3a6 6 0 0 0-3.8 10.6c.8.7 1.3 1.6 1.3 2.6V16h5v-.2c0-1 .5-1.9 1.3-2.6A6 6 0 0 0 12 3z"/>',
+  agent:'<rect x="4.5" y="8" width="15" height="11.5" rx="3.5"/><path d="M12 4.5V8"/><circle cx="12" cy="3.6" r="1"/><circle cx="9.3" cy="13.4" r="1.2" fill="currentColor" stroke="none"/><circle cx="14.7" cy="13.4" r="1.2" fill="currentColor" stroke="none"/><path d="M2.5 12.5v3M21.5 12.5v3"/>'
+};
+function svgIcon(body){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+body+'</svg>'; }
+function calIcon(d){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><text x="12" y="18.2" text-anchor="middle" font-size="8.4" font-weight="700" font-family="Bricolage Grotesque, system-ui, sans-serif" fill="currentColor" stroke="none">'+d.getDate()+'</text></svg>'; }
+function rail(cat, iconHtml, label, sub){
+  const r=el("div","rail"); r.insertAdjacentHTML("beforeend",iconHtml); r.appendChild(el("div","lbl",label)); if(sub) r.appendChild(el("div","sub",sub)); return r;
+}
+function themed(c, cat, railEl){ const old=c.querySelector(":scope > .lead"); if(old) old.remove(); c.classList.remove("nolead","urgent","high"); c.classList.add("feed","cat-"+cat); c.prepend(railEl); return c; }
+// Project themes: an icon and a colour per project, so each area of life reads at a glance in the feed. This is the generic
+// library; a workspace adds its own under WORKSPACE.themes and maps project names to keys in WORKSPACE.projectThemes.
+const BASE_THEMES = {
+  studio:{label:"Studio", c:["#2F5BB7","#8FB0F2"], s:["#E6EDFB","#1E2840"], i:'<path d="M12 3l6 8-6 10-6-10z"/><circle cx="12" cy="11" r="1.6"/><path d="M12 3v6.4"/>'},
+  clients:{label:"Clients", c:["#2E7D4F","#7ED3A0"], s:["#E2F2E8","#16301F"], i:'<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19c.6-3.3 2.8-5.2 5.5-5.2s4.9 1.9 5.5 5.2"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15.8 14c2.4.1 4.1 1.8 4.7 4.6"/>'},
+  grant:{label:"Grants", c:["#C2551A","#F4A06B"], s:["#FCEBDD","#3A2416"], i:'<circle cx="12" cy="9" r="5.5"/><path d="M9 13.5L7.5 21l4.5-2.5 4.5 2.5L15 13.5"/><path d="M10 9l1.4 1.4L14.2 7.6"/>'},
+  type:{label:"Type", c:["#7A3FC2","#BE9BF5"], s:["#EFE6FB","#281D3D"], i:'<path d="M5 6.5V4.5h14v2"/><path d="M12 4.5V20"/><path d="M9 20h6"/>'},
+  finance:{label:"Finance", c:["#9A6B00","#EAC36A"], s:["#FAF0D6","#33290F"], i:'<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.6-1.4-2.8-1.4-1.6 0-2.8.9-2.8 2.1 0 2.9 5.8 1.5 5.8 4.3 0 1.3-1.3 2.1-3 2.1-1.3 0-2.5-.6-3-1.5M12 6v1.8M12 16.3V18"/>'},
+  home:{label:"Home", c:["#A0522D","#E5A07C"], s:["#F7E8DE","#362219"], i:'<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/>'},
+  art:{label:"Art", c:["#A8329A","#E890DD"], s:["#F8E4F5","#361B33"], i:'<path d="M11 3l1.9 4.9 4.9 1.9-4.9 1.9L11 16.6l-1.9-4.9-4.9-1.9 4.9-1.9z"/><path d="M18 14.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>'},
+  business:{label:"Business", c:["#3E5B84","#9DB6DA"], s:["#E5ECF5","#1E2738"], i:'<rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17"/>'},
+  health:{label:"Health", c:["#5B7F1E","#B5D877"], s:["#EDF4DC","#252F13"], i:'<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19l7.5-7.5"/>'},
+  travel:{label:"Travel", c:["#2B6FD1","#8DB8F5"], s:["#E3EEFC","#1A2840"], i:'<path d="M21 4.5L3 11.5l7 2.5 2.5 7z"/><path d="M10 14l5-5"/>'},
+  general:{label:"General", c:["#5A6761","#9AA6A0"], s:["#E8ECE8","#1E2622"], i:'<path d="M4 13.5h4.2l1.6 2.6h4.4l1.6-2.6H20"/><path d="M6.2 5h11.6L20 13.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5.5z"/>'},
+};
+const BASE_CATEGORY_THEME = {Creative:"art",Home:"home",Finance:"finance",Health:"health",Travel:"travel",Business:"business",Clients:"clients"};
+let THEMES = BASE_THEMES;
+function applyThemes(){ // one stylesheet for all themes, light and dark; rebuilt when the workspace brings its own
+  THEMES = Object.assign({}, BASE_THEMES, WORKSPACE.themes);
+  const L=[],D=[]; Object.entries(THEMES).forEach(([k,t])=>{ L.push(`.th-${k}{--c:${t.c[0]};--cs:${t.s[0]}}`); D.push(`.th-${k}{--c:${t.c[1]};--cs:${t.s[1]}}`); });
+  let st=document.getElementById("themeStyles"); if(!st){ st=document.createElement("style"); st.id="themeStyles"; document.head.appendChild(st); }
+  st.textContent=L.join("")+`@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) ${D.join(`:root:not([data-theme="light"]) `)}}`+D.map(x=>`:root[data-theme="dark"] `+x).join("");
+}
+applyThemes();
+function themeOfTask(r){
+  try{ for(const u of JSON.parse(r.Project||"[]")){ const id=pageId(u); const n=state.projects[id]; const pt=WORKSPACE.projectThemes[n]; if(n && THEMES[pt]) return {key:pt}; if(n) return {key:(WORKSPACE.categoryThemes||BASE_CATEGORY_THEME)[state.projCat[id]]||"general", label:n}; } }catch(e){}
+  return {key:"general"};
+}
+function railFor(th, sub){ const t=THEMES[th.key]||THEMES.general; const r=el("div","rail"); r.insertAdjacentHTML("beforeend",svgIcon(t.i)); r.appendChild(el("div","lbl",th.label||t.label)); if(sub) r.appendChild(el("div","sub",sub)); return r; }
+function themed(c, th, sub){ const old=c.querySelector(":scope > .lead"); if(old) old.remove(); c.classList.remove("nolead","urgent","high"); c.classList.add("feed","th-"+th.key); c.prepend(railFor(th, sub)); return c; }
+function feedCard(it){
+  const c=feedCardInner(it);
+  if(it.kind==="note") return themed(c,{key:THEMES[it.n.p]?it.n.p:"general"},"Idea");
+  if(it.kind==="activity"){ const ag=AGENTS.find(a=>a.id===it.x.agent); return themed(c,themeOfTask(it.x.task),ag.name); }
+  const r=it.r, due=parseDay(r["date:Due Date:start"]), th=themeOfTask(r);
+  if(it.k==="triage") return themed(c,th,"Triage");
+  if(due && daysFrom(due)<=7) return themed(c,th,daysFrom(due)<0?rel(daysFrom(due)):"Due "+rel(daysFrom(due)).replace("in ",""));
+  return themed(c,th,r.Status==="Blocked"?"Blocked":r.Status==="In Progress"?"Doing":"To do");
+}
+function feedCardInner(it){
+  const why=whyLine(it.why);
+  if(it.kind==="task") return card(it.r, it.k==="triage"?"triage":it.k, why);
+  if(it.kind==="note") return noteCard(it.n, why);
+  const x=it.x; const ag=AGENTS.find(a=>a.id===x.agent);
+  const c=el("div","card activity"); const lead=el("div","lead"); const av=el("div","av",ag.ab||ag.name.slice(0,2)); av.style.background=ag.color; lead.appendChild(av); c.appendChild(lead);
+  const b=el("div","body"); b.appendChild(why);
+  b.appendChild(el("div","said",x.text));
+  const on=el("div","on"); on.append(document.createTextNode("on ")); const a=el("a",null,clean(x.task.Task)); a.href=x.task.url; a.target="_blank"; a.rel="noopener"; on.appendChild(a); b.appendChild(on);
+  const acts=el("div","actions"); const end=el("div","end"); acts.appendChild(snoozeBtn(it.key)); end.append(claudeBtn(x.task), notionBtn(x.task.url)); acts.appendChild(end); b.appendChild(acts);
+  c.appendChild(b); return c;
+}
+if("IntersectionObserver" in window){
+  new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting) && state.feed && state.feedShown<state.feed.length){
+    const l=$("l-feed"); state.feed.slice(state.feedShown,state.feedShown+10).forEach(it=>l.appendChild(feedCard(it))); state.feedShown+=10;
+    $("feedMore").textContent = state.feed.length>state.feedShown ? "Scroll for more" : "You're all caught up · "+plural(state.feed.length,"card"); } },{rootMargin:"400px"}).observe($("feedMore"));
+}
+
+function mark(id,v){ state.added[id]=v; save();
+  if(state.db && v!=="copied") state.db.collection("notesdone").doc(id).set({v, at:localDay()}).catch(e=>toast("Saved here only: "+((e&&e.message)||(e&&e.code)||"db error"))); }
+function unmark(id){ delete state.added[id]; delete state.notesDone[id]; save(); render();
+  if(state.db) state.db.collection("notesdone").doc(id).delete().catch(()=>{}); }
+function save(){ try{ localStorage.setItem("inbox-added",JSON.stringify(state.added)); }catch(e){} }
+
+// Project filter: the chips group cards by the same label as the feed rail (themeOfTask), so related projects that share a
+// theme are one chip. Counts ignore the filter, so the picked chip never vanishes. state.proj null means everything.
+const PROJ_TABS = ["feed","triage","due","open","notes"], PROJ_CHIPS = 8;
+function thLabel(th){ return th.label || (THEMES[th.key]||THEMES.general).label; }
+function rowProj(r){ return thLabel(themeOfTask(r)); }
+function noteProj(n){ return (THEMES[n.p]||THEMES.general).label; }
+function inProj(label){ return !state.proj || label===state.proj; }
+function setProj(label){
+  state.proj=label||null; state.feedShown=12;
+  try{ if(state.proj) localStorage.setItem("inbox-proj",state.proj); else localStorage.removeItem("inbox-proj"); }catch(e){}
+  render();
+}
+function projGroups(){
+  const g=new Map(); const add=(label,key)=>{ const x=g.get(label)||{label,key,n:0}; x.n++; g.set(label,x); };
+  [...(state.triage||[]),...(state.open||[])].filter(r=>!state.hidden.has(pageId(r.url))).forEach(r=>{ const th=themeOfTask(r); add(thLabel(th),THEMES[th.key]?th.key:"general"); });
+  openNotes().forEach(n=>add(noteProj(n),THEMES[n.p]?n.p:"general"));
+  return [...g.values()].sort((a,b)=>b.n-a.n||a.label.localeCompare(b.label));
+}
+function renderProjBar(){
+  const bar=$("projBar"); const groups=projGroups();
+  // A remembered project with no cards left goes back to everything, but only once tasks and project names have loaded.
+  if(state.proj && state.triage && state.open && Object.keys(state.projects).length && !groups.some(x=>x.label===state.proj)){ setProj(null); return; }
+  bar.replaceChildren(); if(groups.length<2 && !state.proj){ applyTab(); return; } // one group: nothing to filter
+  let shown=state.projAll ? groups : groups.slice(0,PROJ_CHIPS);
+  const pick=groups.find(x=>x.label===state.proj); if(pick && !shown.includes(pick)) shown=[...shown,pick];
+  const chip=(label,key,n,on,fn)=>{ const b=el("button","pchip"+(key?" th-"+key:"")); b.type="button"; b.setAttribute("aria-pressed",on);
+    b.append(el("i"), document.createTextNode(label)); if(n!=null) b.appendChild(el("span","n",String(n))); b.addEventListener("click",fn); return b; };
+  bar.appendChild(chip("All",null,null,!state.proj,()=>setProj(null)));
+  shown.forEach(x=>bar.appendChild(chip(x.label,x.key,x.n,x.label===state.proj,()=>setProj(x.label===state.proj?null:x.label))));
+  if(shown.length<groups.length){ const more=chip("+"+(groups.length-shown.length)+" more",null,null,false,()=>{ state.projAll=true; renderProjBar(); }); bar.appendChild(more); }
+  applyTab();
+}
+function applyTab(){
+  $("projBar").hidden = !$("projBar").childNodes.length || !PROJ_TABS.includes(state.tab);
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-pressed", t.dataset.tab===state.tab));
+  document.querySelectorAll("section[data-sec]").forEach(s=>{ s.hidden = s.dataset.sec!==state.tab; });
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{ state.tab=t.dataset.tab; try{localStorage.setItem("inbox-tab",state.tab);}catch(e){} applyTab(); }));
+
+// ---------- freshness: never let the page quietly show old data ----------
+function ago(ms){ const m=Math.round((Date.now()-ms)/60000); return m<1?"just now":m<60?m+" min ago":Math.round(m/60)+" h ago"; }
+function updateLive(){
+  if(!state.mcp) return;
+  if(MODE==="demo"){ $("live").className="live on"; $("statusLine").textContent="Demo · sample data"; return; }
+  const keys=["triage","open"]; const oks=keys.map(k=>state.lastOk[k]).filter(Boolean);
+  const errs=Object.values(state.errors); const oldest=oks.length===keys.length ? Math.min(...oks) : null;
+  const stale = errs.length || !oldest || Date.now()-oldest > 15*60e3;
+  $("live").className="live "+(stale?"stale":"on");
+  if(errs.length) $("statusLine").textContent = (oldest?"Showing data from "+ago(oldest)+" · ":"")+errorCopy(errs[0]);
+  else if(!oldest) $("statusLine").textContent = "Loading from Notion…";
+  else $("statusLine").textContent = (stale?"Stale · last updated ":"Live · updated ")+ago(oldest)+(stale?"":" · every 2 min");
+}
+setInterval(()=>{ updateLive(); if(document.visibilityState==="visible" && state.mcp){ const o=Math.min(...["triage","open"].map(k=>state.lastOk[k]||0)); if(o && Date.now()-o>10*60e3) refresh(); } }, 30000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible" && state.mcp){ const o=Math.min(...["triage","open"].map(k=>state.lastOk[k]||0)); if(!o || Date.now()-o>2*60e3) refresh(); updateLive(); } });
+$("refreshBtn").addEventListener("click",()=>{ if(!state.mcp){ toast("Live tasks need Notion connected in this view."); return; } $("statusLine").textContent="Refreshing…"; refresh(); });
+
+// ---------- quick update: a dated line in Notes, an optional status change, and the card drops down the feed ----------
+const UPD_TAG = /\[inbox (\d{4}-\d{2}-\d{2})\]/g;
+state.bumped = {}; try { state.bumped = JSON.parse(localStorage.getItem("inbox-bumped") || "{}"); } catch(e) {}
+function recentlyUpdated(r){
+  const pid=pageId(r.url); let latest=null;
+  if(state.bumped[pid] && Date.now()-state.bumped[pid] < 3*86400e3) latest=new Date(state.bumped[pid]);
+  let m; UPD_TAG.lastIndex=0; const notes=clean(r.Notes);
+  while((m=UPD_TAG.exec(notes))){ const d=parseDay(m[1]); if(daysFrom(d)>=-2 && (!latest || d>latest)) latest=d; }
+  return latest;
+}
+function localDay(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function openUpdate(r, cardEl, body){
+  const open=body.querySelector(".upd"); if(open){ open.querySelector("textarea").focus(); return; }
+  const box=el("div","upd");
+  const ta=el("textarea"); ta.id="upd-"+pageId(r.url); ta.placeholder="What happened? e.g. Called Rogers, waiting on a callback Friday";
+  const row=el("div","row"); const st=el("div","st"); let status=null;
+  [["No change",null],["To do","To Do"],["Doing","In Progress"],["Blocked","Blocked"]].forEach(([lbl,val])=>{
+    const bt=el("button",null,lbl); bt.type="button"; bt.setAttribute("aria-pressed",val===null?"true":"false");
+    bt.addEventListener("click",()=>{ status=val; st.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===bt?"true":"false")); }); st.appendChild(bt); });
+  const save=el("button","btn primary","Save"); const cancel=el("button","btn ghost","Cancel");
+  row.append(st, save, cancel, el("span","hint","⌘↵ to save"));
+  box.append(ta,row); body.insertBefore(box, body.querySelector(".actions")); ta.focus();
+  const close=()=>{ box.remove(); if(state.pendingRender){ state.pendingRender=false; render(); } };
+  cancel.addEventListener("click",close);
+  const go=()=>saveUpdate(r, ta.value.trim(), status, cardEl, box, save);
+  save.addEventListener("click",go);
+  ta.addEventListener("keydown",e=>{ if(e.key==="Enter" && (e.metaKey||e.ctrlKey)){ e.preventDefault(); go(); } if(e.key==="Escape") close(); });
+}
+async function saveUpdate(r, text, status, cardEl, box, btn){
+  if(!text && !status){ box.querySelector("textarea").focus(); return; }
+  const pid=pageId(r.url); if(!pid||!state.mcp) return;
+  const props={};
+  if(text){ const line="[inbox "+localDay()+"] "+text.replace(/\s*\n+\s*/g," "); props.Notes = r.Notes ? r.Notes+"\n"+line : line; }
+  if(status && status!==r.Status) props.Status=status;
+  if(!Object.keys(props).length){ box.remove(); return; }
+  btn.disabled=true; btn.textContent="Saving…";
+  try{
+    await state.mcp.callTool(SERVER,"notion-update-page",{page_id:pid, command:"update_properties", properties:props, allow_async:false},{cache:false});
+    if(props.Notes) r.Notes=props.Notes; if(props.Status) r.Status=props.Status;
+    state.bumped[pid]=Date.now(); try{ localStorage.setItem("inbox-bumped",JSON.stringify(state.bumped)); }catch(e){}
+    box.remove(); state.pendingRender=false; render(); refresh();
+    toast("Updated"+(props.Status?" · now "+({"To Do":"To do","In Progress":"Doing","Blocked":"Blocked"}[props.Status]):"")+". It moves down your feed for a few days.");
+  }catch(e){
+    btn.disabled=false; btn.textContent="Save";
+    let m=box.querySelector(".err"); if(!m){ m=el("div","err"); box.appendChild(m); }
+    m.textContent = e && (e.code==="server_unavailable"||e.code==="upstream_error") ? "Notion didn't confirm. Open the task in Notion to check before saving again." : errorCopy(e);
+  }
+}
+
+// ---------- writes ----------
+async function setStatus(r, to, from, cardEl, verb){
+  const pid=pageId(r.url); if(!pid||!state.mcp) return;
+  cardEl.classList.add("busy");
+  try{
+    await state.mcp.callTool(SERVER,"notion-update-page",{page_id:pid, command:"update_properties", properties:{Status:to}, allow_async:false},{cache:false});
+    state.hidden.add(pid); render();
+    toast(verb+": "+clean(r.Task), async ()=>{
+      try{ await state.mcp.callTool(SERVER,"notion-update-page",{page_id:pid, command:"update_properties", properties:{Status:from}, allow_async:false},{cache:false});
+        state.hidden.delete(pid); refresh(); toast("Put back as "+from+"."); }
+      catch(e){ toast("Couldn't undo. "+errorCopy(e)); }
+    });
+    refresh();
+  }catch(e){
+    cardEl.classList.remove("busy");
+    const host=cardEl.querySelector(".body")||cardEl; let m=cardEl.querySelector(".err"); if(!m){ m=el("div","err"); host.appendChild(m); }
+    m.textContent = e && (e.code==="server_unavailable"||e.code==="upstream_error") ? "Notion didn't confirm. Reload to check before trying again." : errorCopy(e);
+  }
+}
+
+async function addNote(n, cardEl){
+  cardEl.classList.add("busy");
+  try{
+    await state.mcp.callTool(SERVER,"notion-create-pages",{
+      parent:{type:"data_source_id", data_source_id:tasksDsId()},
+      pages:[{properties:{Task:n.t, Status:"To Do", Assignee:WORKSPACE.ownerAssignee, Priority:"Medium", "First step":n.step||"",
+        Source:["Apple Note",n.note,n.d].filter(Boolean).join(" · "), Notes:"[inbox "+new Date().toISOString().slice(0,10)+"] From Apple Note ("+n.d+"): \""+n.q+"\""}}],
+      allow_async:false
+    },{cache:false});
+    mark(n.id,"added"); toast("Added to Tasks: "+n.t); refresh(); renderNotes();
+  }catch(e){
+    cardEl.classList.remove("busy");
+    const host=cardEl.querySelector(".body")||cardEl; let m=cardEl.querySelector(".err"); if(!m){ m=el("div","err"); host.appendChild(m); }
+    m.textContent = e && (e.code==="server_unavailable"||e.code==="upstream_error") ? "Notion didn't confirm. Reload to check it isn't already there before trying again." : errorCopy(e);
+  }
+}
+
+// Fallback when this view has no Notion access: a prompt to paste into Claude Code.
+function copyPrompt(n){
+  const text=`Add this task to ${WORKSPACE.name} ▸ Tasks (${WORKSPACE.tasksDs}). Search Tasks first and skip it if it exists. Assignee ${WORKSPACE.ownerAssignee}, Status To Do, Priority Medium, Source "Apple Note · ${n.d}", and link the best-matching Master Project.\n\nTask: ${n.t}\nFirst step: ${n.step}\nNotes: From my Apple Note (${n.d}): "${n.q}"`;
+  const show=()=>showSheet(text);
+  try{ navigator.clipboard.writeText(text).then(()=>{ mark(n.id,"copied"); renderNotes(); toast("Prompt copied. Paste it into Claude Code."); }, show); }catch(e){ show(); }
+}
+function showSheet(text, title){ $("sheetTitle").textContent=title||"Copy this into Claude Code"; $("sheetText").value=text; $("sheet").hidden=false; $("sheetText").focus(); $("sheetText").select(); }
+$("sheetClose").addEventListener("click",()=>$("sheet").hidden=true);
+$("sheet").addEventListener("click",e=>{ if(e.target.id==="sheet") e.target.hidden=true; });
+
+// ---------- reads ----------
+// Reads go through saved Notion views (view mode), which don't count against the workspace's Query Data Source limit.
+const VIEW = id => ({data:{mode:"view", view_url:"https://app.notion.com/p/"+id, page_size:100}});
+// WORKSPACE.views: triage (Tasks ▸ Triage), open (the owner's open tasks), projects (Projects ▸ all), as "<db id>?v=<view id>".
+function rowsOf(result){
+  let p=result && result.payload;
+  if(typeof p==="string"){ try{ p=JSON.parse(p); }catch(e){ p=null; } }
+  return p && Array.isArray(p.results) ? p : {results:[], has_more:false};
+}
+function watch(key, input, onRows, every){
+  return state.mcp.watchTool(SERVER,"notion-query-data-sources",input, ev=>{
+    if(ev.type==="data"){
+      delete state.errors[key];
+      state.lastOk[key]=(ev.result.cache && ev.result.cache.storedAt) || Date.now();
+      if(ev.result.cache && ev.result.cache.storedAt) state.storedAt=ev.result.cache.storedAt; else state.storedAt=Date.now();
+      onRows(rowsOf(ev.result));
+    } else {
+      state.errors[key]=ev.error;
+      if(DENIALS.has(ev.error.code)){ if(key==="triage") state.triage=null; if(key==="open") state.open=null; }
+    }
+    render();
+  },{refetchInterval:every, cache:{staleTime:60000}});
+}
+function refresh(){ if(state.mcp) state.mcp.invalidate(SERVER,"notion-query-data-sources").catch(()=>{}); }
+
+function noNotion(msg){
+  $("notice").hidden=false; $("notice").replaceChildren(); const b=el("b",null,"Live tasks aren't available in this view. "); $("notice").append(b, document.createTextNode(msg));
+  ["triage","due","open"].forEach(k=>{ $("l-"+k).replaceChildren(el("div","empty","Open this page on claude.ai with Notion connected to see these.")); $("n-"+k).textContent="–"; });
+  $("statusLine").textContent="Not connected"; $("live").className="live err"; $("summary").textContent="Live tasks need Notion. Your note ideas are below.";
+  renderNotes(); state.mcpChecked=true; renderFeed(); $("l-agents").replaceChildren(el("div","empty","Agent activity comes from your Notion tasks.")); applyTab();
+}
+
+// ---------- questions: the morning brief's open questions ----------
+// /team writes them to this page's db (doc brief/questions, from life-agents bin/inbox_questions.py).
+// Answer goes through the launcher's /ask, which reads the question from the brief on disk; that session records the
+// answer with rules.py and writes answered/<key> here.
+const ASK = "http://127.0.0.1:47321/ask";
+state.q = null; state.qAnswered = {}; state.qOpened = {};
+try { state.qOpened = JSON.parse(localStorage.getItem("inbox-q-opened") || "{}"); } catch(e) {}
+const KIND = {offer:"Offer", clarify:"Clarify", decide:"Decide"};
+function qDocId(key){ return String(key).replace(/[^A-Za-z0-9_\-.~:@+]/g,"-"); }
+function askLink(it){ return ASK+"?"+new URLSearchParams({key:it.key, t:state.launchToken}).toString(); }
+function qCard(it){
+  const ag=AGENTS.find(a=>a.id===it.agent)||{name:it.agent||"Agent", color:"var(--faint)"};
+  const done=!!state.qAnswered[qDocId(it.key)]; const opened=state.qOpened[it.key];
+  const c=el("div","card"+(done?" answered":"")); const lead=el("div","lead"); const av=el("div","av",ag.ab||String(ag.name).slice(0,2)); av.style.background=ag.color; lead.appendChild(av); c.appendChild(lead);
+  const b=el("div","body");
+  const meta=el("div","meta"); meta.appendChild(el("span",null,ag.name+(it.n?" · Q"+it.n:"")));
+  if(KIND[it.kind]) meta.appendChild(el("span","q-kind",KIND[it.kind]));
+  if(it.doer==="session") meta.appendChild(el("span","pill p-info","Desk session"));
+  if(done) meta.appendChild(el("span","pill p-due","Answered "+fmtDay(parseDay(String(state.qAnswered[qDocId(it.key)].at||localDay())))));
+  b.append(meta, el("div","q-text",it.text||""));
+  const a=el("div","actions"); const end=el("div","end");
+  if(!done){
+    const mk=el("button","btn ghost","Mark answered"); mk.title="Tick it off here if you answered it another way (email reply, /team)";
+    mk.addEventListener("click",()=>markAnswered(it,true));
+    a.appendChild(mk);
+  } else { const un=el("button","btn ghost","Reopen"); un.addEventListener("click",()=>markAnswered(it,false)); a.appendChild(un); }
+  const go=el("a","claude"+(opened&&!done?" live":"")); go.href=askLink(it); go.target="_blank"; go.rel="noopener";
+  go.title="Open Claude Code in life-agents with this question loaded";
+  go.insertAdjacentHTML("beforeend", opened&&!done?BACK:PLAY);
+  go.append(document.createTextNode(opened&&!done?"Back to Claude":"Answer with Claude"));
+  go.addEventListener("click",e=>{ if(!state.launchToken){ e.preventDefault(); showSheet("Answer this question from the morning brief, record my answer with rules.py and tick it off in the Inbox page:\n\n"+(it.text||"")+"\n\n(key: "+it.key+")", "Open Claude Code in life-agents and paste this"); } state.qOpened[it.key]=state.qOpened[it.key]||Date.now(); try{localStorage.setItem("inbox-q-opened",JSON.stringify(state.qOpened));}catch(e){} setTimeout(renderQuestions,50); });
+  end.appendChild(go); a.appendChild(end); b.appendChild(a); c.appendChild(b);
+  return c;
+}
+async function markAnswered(it, yes){
+  if(!state.db) return;
+  const ref=state.db.collection("answered").doc(qDocId(it.key));
+  try{ if(yes) await ref.set({at:localDay(), via:"inbox"}); else await ref.delete(); toast(yes?"Marked answered.":"Reopened."); }
+  catch(e){ toast("Couldn't save that: "+((e&&e.message)||(e&&e.code)||"unknown error")); }
+}
+function renderQuestions(){
+  const l=$("l-questions");
+  if(state.qErr){ l.replaceChildren(el("div","empty",state.qErr)); $("n-questions").textContent="–"; return; }
+  if(!state.q) return;
+  const items=(state.q.items||[]).slice().sort((a,b)=>(a.n||99)-(b.n||99));
+  const open=items.filter(it=>!state.qAnswered[qDocId(it.key)]), done=items.filter(it=>state.qAnswered[qDocId(it.key)]);
+  setCount("questions",open.length,"open question");
+  const run=String(state.q.run||""); const m=run.match(/^(\d{4})(\d{2})(\d{2})/);
+  $("q-desc").textContent="What the agents asked you"+(m?" in the "+fmtDay(new Date(+m[1],+m[2]-1,+m[3]))+" brief":" in the morning brief")+". Answer opens Claude Code in life-agents with the question loaded; it records your answer as a rule and ticks it off here.";
+  l.replaceChildren();
+  if(!items.length){ l.appendChild(el("div","empty","No questions in the latest brief.")); return; }
+  if(!open.length) l.appendChild(el("div","empty","All answered."));
+  let last=null; open.forEach(it=>{ if(it.agent!==last){ l.appendChild(el("div","group-label",(AGENTS.find(a=>a.id===it.agent)||{name:it.agent}).name)); last=it.agent; } l.appendChild(qCard(it)); });
+  if(done.length){ const d=el("details","stale"); const sm=el("summary"); sm.append(el("span",null,"Answered"), el("span","n",plural(done.length,"question"))); d.appendChild(sm);
+    const inner=el("div","list"); done.forEach(it=>inner.appendChild(qCard(it))); d.appendChild(inner); l.appendChild(d); }
+}
+function subscribeDb(db){
+  state.db=db;
+  db.doc("notes/ideas").onSnapshot(snap=>{ state.notesErr=null; const d=snap.exists ? (snap.data()||{}) : {}; state.notes=Array.isArray(d.items)?d.items:[]; state.notesSynced=d.synced||null; render(); },
+    e=>{ state.notesErr="Couldn't load note ideas ("+((e&&e.code)||"error")+")."; renderNotes(); });
+  db.collection("notesdone").onSnapshot(snap=>{ const m={}; snap.docs.forEach(d=>{ m[d.id]=d.data()||{}; }); state.notesDone=m; render(); }, ()=>{});
+  db.doc("brief/questions").onSnapshot(snap=>{ state.qErr=null; state.q = snap.exists ? snap.data() : {items:[]}; renderQuestions(); },
+    e=>{ state.qErr="Couldn't load questions ("+((e&&e.code)||"error")+")."; renderQuestions(); });
+  db.collection("answered").onSnapshot(snap=>{ const m={}; snap.docs.forEach(d=>{ m[d.id]=d.data()||{}; }); state.qAnswered=m; renderQuestions(); }, ()=>{});
+}
+
+// ---------- improve this page: Claude Code with a screenshot and what's on screen ----------
+// The launcher's /feedback saves the context below to a file, waits for its tab to close, screenshots the displays
+// and opens Claude Code in ~ pointed at both. Context is page data only: no task Notes, just what's visible.
+const FEEDBACK = "http://127.0.0.1:47321/feedback";
+function screenContext(note){
+  const vh=innerHeight, seen=[];
+  document.querySelectorAll("section:not([hidden]) .card, section:not([hidden]) .agent").forEach(c=>{
+    const r=c.getBoundingClientRect(); if(r.bottom<0||r.top>vh) return;
+    const t=c.querySelector("h3,.q-text,.said"); const lbl=c.querySelector(".rail .lbl, .rail .sub, .why, .meta");
+    seen.push((lbl?lbl.textContent.trim().slice(0,60)+" | ":"")+(t?t.textContent.trim().slice(0,140):""));
+  });
+  return {page:WORKSPACE.name+" Inbox", mode:MODE, tab:state.tab, note:note||"", at:new Date().toISOString(),
+    viewport:innerWidth+"x"+vh, scrollY:Math.round(scrollY), scrollMax:Math.round(document.documentElement.scrollHeight-vh),
+    theme:matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light",
+    summary:$("summary").textContent, status:$("statusLine").textContent, notice:$("notice").hidden?"":$("notice").textContent,
+    counts:Object.fromEntries([...document.querySelectorAll(".tab")].map(t=>[t.dataset.tab,(t.querySelector(".n")||{}).textContent||""])),
+    feedShown:state.feedShown, visible:seen.slice(0,20)};
+}
+function fbOpen(show){ $("fbPanel").hidden=!show; $("fbTab").setAttribute("aria-expanded",show); if(show) $("fbNote").focus(); }
+$("fbTab").addEventListener("click",()=>fbOpen($("fbPanel").hidden));
+$("fbCancel").addEventListener("click",()=>fbOpen(false));
+$("fbNote").addEventListener("keydown",e=>{ if(e.key==="Escape") fbOpen(false); if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); $("fbGo").click(); } });
+// Capture before the panel closes (it measures the page, not the panel); the panel is gone by the time the screenshot runs.
+$("fbGo").addEventListener("click",()=>{
+  if(!state.launchToken){ $("fbGo").href="#"; showSheet("Improve my Inbox page (web/inbox.html in life-agents). What's on screen:\n"+JSON.stringify(screenContext($("fbNote").value.trim()),null,1)); setTimeout(()=>fbOpen(false),0); return; }
+  $("fbGo").href=FEEDBACK+"?"+new URLSearchParams({t:state.launchToken, ctx:JSON.stringify(screenContext($("fbNote").value.trim()))}).toString();
+  setTimeout(()=>{ fbOpen(false); $("fbNote").value=""; },0);
+});
+
+$("today").textContent = new Date().toLocaleDateString(undefined,{weekday:"long", day:"numeric", month:"long"});
+
+// ---------- start ----------
+function applyWorkspace(){
+  applyThemes();
+  if(MODE!=="demo") document.title = WORKSPACE.name === "Inbox" ? "Inbox" : WORKSPACE.name+" Inbox";
+  [["footTriage",WORKSPACE.footer.triage],["footAll",WORKSPACE.footer.all]].forEach(([id,u])=>{ const a=$(id); a.hidden=!u; if(u) a.href=u; });
+}
+function startNotion(mcp){
+  state.mcp = mcp; renderNotes();
+  const v=WORKSPACE.views;
+  if(v.projects) watch("projects", VIEW(v.projects), p=>{ p.results.forEach(r=>{ const id=pageId(r.url); if(id){ state.projects[id]=clean(r.Name); state.projCat[id]=r.Category||""; if(clean(r["Claude folder"]).startsWith("/")) state.folders[id]=clean(r["Claude folder"]); } }); }, 1800000);
+  if(v.triage) watch("triage", VIEW(v.triage), p=>{ state.triage=p.results; }, 120000); else state.triage=[];
+  if(v.open) watch("open", VIEW(v.open), p=>{ state.open=p.results; state.openMore=!!p.has_more; }, 120000); else state.open=[];
+}
+function notConnected(msg){ // live page with no config/workspace doc yet
+  $("notice").hidden=false; $("notice").replaceChildren(el("b",null,"This page isn't connected to a workspace yet. "), document.createTextNode(msg));
+  ["feed","triage","due","open","agents"].forEach(k=>{ $("l-"+k).replaceChildren(el("div","empty","Nothing to show until setup is done.")); });
+  $("statusLine").textContent="Not set up"; $("live").className="live err"; $("summary").textContent="Run /setup in Claude Code to connect your workspace."; applyTab();
+}
+async function startLive(){
+  const use = name => (window.claude && window.claude.use ? window.claude.use(name) : Promise.resolve(null)).catch(()=>null);
+  const [db, user] = await Promise.all([use("db"), use("user")]);
+  if(!db){ state.qErr="Questions need this page opened on claude.ai while signed in."; renderQuestions();
+    state.notesErr="Note ideas need this page opened on claude.ai while signed in."; renderNotes();
+    noNotion("Open it on claude.ai while signed in."); return; }
+  subscribeDb(db);
+  if(user){ const uid=await user.id().catch(()=>null);
+    if(uid) db.doc("data/users/"+uid+"/launcher").onSnapshot(snap=>{ const t=snap.exists && (snap.data()||{}).token; state.launchToken=typeof t==="string" && t ? t : null; render(); }, ()=>{}); }
+  let started=false;
+  db.doc("config/workspace").onSnapshot(async snap=>{
+    if(!snap.exists){ if(!started) notConnected("Run /setup in Claude Code; it writes this page's workspace settings."); return; }
+    WORKSPACE=normalizeWorkspace(snap.data()); applyWorkspace(); $("notice").hidden=true;
+    if(started){ render(); return; }
+    started=true;
+    const mcp = await use("mcp");
+    if(!mcp){ noNotion("The From notes buttons copy a prompt for Claude Code instead."); return; }
+    startNotion(mcp);
+  }, e=>notConnected("Couldn't read this page's settings ("+((e&&e.code)||"error")+")."));
+}
+function startDemo(){
+  const D=window.DEMO; WORKSPACE=normalizeWorkspace(D.workspace); applyWorkspace();
+  const {mcp, db} = makeDemoAdapters(D);
+  state.launchToken="demo";
+  const bn=$("demoBanner"); bn.hidden=false;
+  bn.append(el("b",null,"Demo with sample data. "), document.createTextNode(D.blurb+" Nothing here is real, and nothing you click is saved. "));
+  if(WORKSPACE.setupUrl){ const a=el("a",null,"Set up your own →"); a.href=WORKSPACE.setupUrl; a.target="_blank"; a.rel="noopener"; bn.appendChild(a); }
+  // Links that would leave the page explain themselves instead. Capture phase, so the card's own click handlers still run.
+  const SAYS = [[".claude[href*='/ask']","In your setup this opens Claude Code with the question loaded. Your answer becomes a rule the agents follow."],
+    [".claude","In your setup this opens Claude Code in the task's project folder, with the task loaded and its first step ready."],
+    [".notion","Opens the task in your Notion."], [".btn.draft","Opens the Gmail draft an agent wrote for this task, ready for you to send."],
+    ["#fbGo","Opens Claude Code with a screenshot of this page, so you can ask for changes to it."], [".foot","Opens your Tasks in Notion."]];
+  document.addEventListener("click",e=>{ const a=e.target.closest("a"); if(!a || a.closest("#demoBanner")) return;
+    const hit=SAYS.find(([sel])=>a.matches(sel)); if(!hit) return; e.preventDefault(); toast(hit[1]); if(a.id==="fbGo") setTimeout(()=>fbOpen(false),0); }, true);
+  subscribeDb(db); startNotion(mcp);
+}
+renderNotes(); applyTab();
+if(MODE==="demo" && window.DEMO) startDemo(); else startLive();
+</script>
+

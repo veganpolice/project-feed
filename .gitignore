@@ -1,0 +1,4 @@
+dist/
+__pycache__/
+tests/personal.txt
+.DS_Store
